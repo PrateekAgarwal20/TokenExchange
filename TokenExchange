@@ -2,8 +2,7 @@ pragma solidity ^0.4.7;
 import "Token.sol";
 contract TokenExchange{
 
-  function tokenExchange(){
-  }
+  function tokenExchange(){}
 
   //When used in mapping, this keeps track of how many of a specific
   //type of token a user has deposited or bought. When price == 0, token is not being sold.
@@ -32,8 +31,8 @@ contract TokenExchange{
   // and updates tokenBalances accordingly
   function depositToken(address _token, uint _amount){
     Token token = Token(_token);
+    tokenBalances[msg.sender][_token].numTokens += _amount;
     if (!token.transferFrom(msg.sender, this, _amount)) throw;
-    tokenBalances[msg.sender][_token][tokenBalance].numTokens += _amount;
   }
 
   // allows users who have previously deposited tokens to reclaim possession of them.
@@ -41,10 +40,10 @@ contract TokenExchange{
   // decentralized exchange should use the tokens transfer function
   function withdrawToken(address _token, uint _amount) {
     Token token = Token(_token);
-    uint _numTokens = tokenBalances[msg.sender][token][tokenBalance].numTokens;
+    uint _numTokens = tokenBalances[msg.sender][token].numTokens;
     if(_numTokens < _amount) throw;
+    tokenBalances[msg.sender][_token].numTokens -= _amount;
     transfer(msg.sender, _amount);
-    tokenBalances[msg.sender][_token][tokenBalance].numTokens -= _amount;
   }
 
 
@@ -52,13 +51,13 @@ contract TokenExchange{
   // _token.    (this should be called getTokenBalance)
   function getTokenBalance(address _owner, address _token) returns uint tokenBalance {
     Token token = Token(_token);
-    return tokenBalances[_owner][token][tokenBalance].numTokens;
+    return tokenBalances[_owner][token].numTokens;
   }
 
   //set the price you are willing to sell your tokens for (in Ether)
   function setPrice(address _token, uint _price) {
     Token token = Token(_token);
-    tokenBalances[msg.sender][token][tokenBalance].price = _price;
+    tokenBalances[msg.sender][token].price = _price;
   }
 
   // send this function with at least _amount * _price of token for that specific
@@ -67,14 +66,15 @@ contract TokenExchange{
   // function is for).
   function buyToken(address _token, address _seller, uint _amount) payable {
     Token token = Token(_token);
+    if(tokenBalances[msg.sender][token].price == 0) throw;
+    tokenBalances[msg.sender][token].numTokens += _amount;
+    etherBalance[msg.sender] -= _amount * tokenBalances[msg.sender][token].price;
     if (!token.transferFrom(msg.sender, this, _amount)) throw;
-    tokenBalances[msg.sender][token][tokenBalance].numTokens += _amount;
-    etherBalance[msg.sender] -= _amount * tokenBalances[msg.sender][token][tokenBalance].price;
   }
 
   // withdraw _amount of Ether that you have in the exchange (from selling tokens).
   withdrawEther(uint _amount) payable {
     if(etherBalance[msg.sender] < _amount) throw;
-    [msg.sender].send(_amount ether);
     etherBalance[msg.sender] -= _amount;
+    [msg.sender].send(_amount ether);
   }
