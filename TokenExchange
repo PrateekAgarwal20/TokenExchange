@@ -43,21 +43,19 @@ contract TokenExchange{
     uint _numTokens = tokenBalances[msg.sender][token].numTokens;
     if(_numTokens < _amount) throw;
     tokenBalances[msg.sender][_token].numTokens -= _amount;
-    transfer(msg.sender, _amount);
+    this.transfer(msg.sender, _amount);
   }
 
 
   // returns the number of tokens that a user has deposited of that specific
   // _token.    (this should be called getTokenBalance)
   function getTokenBalance(address _owner, address _token) returns uint tokenBalance {
-    Token token = Token(_token);
-    return tokenBalances[_owner][token].numTokens;
+    return tokenBalances[_owner][_token].numTokens;
   }
 
   //set the price you are willing to sell your tokens for (in Ether)
   function setPrice(address _token, uint _price) {
-    Token token = Token(_token);
-    tokenBalances[msg.sender][token].price = _price;
+    tokenBalances[msg.sender][_token].price = _price;
   }
 
   // send this function with at least _amount * _price of token for that specific
@@ -67,8 +65,11 @@ contract TokenExchange{
   function buyToken(address _token, address _seller, uint _amount) payable {
     Token token = Token(_token);
     if(tokenBalances[msg.sender][token].price == 0) throw;
+    if(tokenBalances[_seller][token].numTokens < _amount) throw;
     tokenBalances[msg.sender][token].numTokens += _amount;
-    etherBalance[msg.sender] -= _amount * tokenBalances[msg.sender][token].price;
+    tokenBalances[_seller][token].numTokens -= _amount;
+    etherBalance[msg.sender] -= msg.value;
+    etherBalance[_seller] += msg.value;
     if (!token.transferFrom(msg.sender, this, _amount)) throw;
   }
 
@@ -76,5 +77,5 @@ contract TokenExchange{
   withdrawEther(uint _amount) payable {
     if(etherBalance[msg.sender] < _amount) throw;
     etherBalance[msg.sender] -= _amount;
-    [msg.sender].send(_amount ether);
+    msg.sender.send(_amount ether);
   }
