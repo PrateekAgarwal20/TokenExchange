@@ -43,7 +43,7 @@ contract TokenExchange{
     uint _numTokens = tokenBalances[msg.sender][token].numTokens;
     if(_numTokens < _amount) throw;
     tokenBalances[msg.sender][_token].numTokens -= _amount;
-    this.transfer(msg.sender, _amount);
+    token.transfer(msg.sender, _amount);
   }
 
 
