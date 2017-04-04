@@ -66,16 +66,16 @@ contract TokenExchange{
     Token token = Token(_token);
     if(tokenBalances[msg.sender][token].price == 0) throw;
     if(tokenBalances[_seller][token].numTokens < _amount) throw;
+    if(msg.value < tokenBalances[msg.sender][token].price * _amount) throw;
+
     tokenBalances[msg.sender][token].numTokens += _amount;
     tokenBalances[_seller][token].numTokens -= _amount;
-    etherBalance[msg.sender] -= msg.value;
     etherBalance[_seller] += msg.value;
-    if (!token.transferFrom(msg.sender, this, _amount)) throw;
   }
 
   // withdraw _amount of Ether that you have in the exchange (from selling tokens).
   withdrawEther(uint _amount) payable {
     if(etherBalance[msg.sender] < _amount) throw;
     etherBalance[msg.sender] -= _amount;
-    msg.sender.send(_amount ether);
+    msg.sender.send(_amount);
   }
